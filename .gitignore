@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.env
+
+# local agent / scratch
+.claude/
+bad_*.png
+屏幕截图_*

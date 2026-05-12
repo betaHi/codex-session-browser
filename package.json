@@ -1,0 +1,30 @@
+{
+  "name": "codex-session-browser",
+  "version": "0.1.0",
+  "description": "Browse, search, and resume local Codex CLI sessions.",
+  "type": "module",
+  "bin": {
+    "codex-session-browser": "./bin/codex-session-browser.js",
+    "codex-sessions": "./bin/codex-session-browser.js"
+  },
+  "scripts": {
+    "start": "node ./bin/codex-session-browser.js",
+    "test": "node --test"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "keywords": [
+    "codex",
+    "codex-cli",
+    "sessions",
+    "tui"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}

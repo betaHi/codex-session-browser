@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codex Session Browser TUI Prototype</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --page: #090b10;
+      --terminal: #0d1117;
+      --terminal-2: #111827;
+      --ink: #e6edf3;
+      --muted: #8b949e;
+      --dim: #5f6b7a;
+      --line: #253041;
+      --line-hot: #3b82f6;
+      --cyan: #22d3ee;
+      --blue: #60a5fa;
+      --green: #34d399;
+      --lime: #a3e635;
+      --yellow: #facc15;
+      --orange: #fb923c;
+      --pink: #f472b6;
+      --red: #f87171;
+      --violet: #a78bfa;
+      --shadow: 0 28px 80px rgba(0, 0, 0, 0.44);
+      --mono: "SFMono-Regular", "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      background:
+        radial-gradient(circle at 16% 18%, rgba(34, 211, 238, 0.16), transparent 28%),
+        radial-gradient(circle at 78% 12%, rgba(244, 114, 182, 0.14), transparent 26%),
+        radial-gradient(circle at 76% 86%, rgba(163, 230, 53, 0.10), transparent 26%),
+        var(--page);
+      color: var(--ink);
+      font-family: var(--sans);
+      letter-spacing: 0;
+    }
+
+    .shell {
+      width: min(1180px, 100%);
+      height: min(760px, calc(100vh - 56px));
+      min-height: 620px;
+      display: grid;
+      grid-template-rows: 36px 38px 1fr 30px;
+      border: 1px solid #2c3648;
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--terminal);
+      box-shadow: var(--shadow);
+    }
+
+    .chrome {
+      display: grid;
+      grid-template-columns: 96px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 0 12px;
+      background: #0a0f17;
+      border-bottom: 1px solid #1f2937;
+      font: 12px var(--mono);
+      color: var(--muted);
+    }
+
+    .dots {
+      display: flex;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      display: block;
+    }
+
+    .dot.red { background: #ff5f56; }
+    .dot.yellow { background: #ffbd2e; }
+    .dot.green { background: #27c93f; }
+
+    .chrome-title {
+      justify-self: center;
+      color: #c9d1d9;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .powerline {
+      display: flex;
+      align-items: stretch;
+      min-width: 0;
+      background: #111827;
+      border-bottom: 1px solid var(--line);
+      font: 12px var(--mono);
+      overflow: hidden;
+    }
+
+    .pl {
+      position: relative;
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      padding: 0 14px 0 12px;
+      color: #061018;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .pl::after {
+      content: "";
+      position: absolute;
+      right: -16px;
+      width: 0;
+      height: 0;
+      border-top: 19px solid transparent;
+      border-bottom: 19px solid transparent;
+      border-left: 16px solid currentColor;
+      z-index: 2;
+    }
+
+    .pl span {
+      position: relative;
+      z-index: 3;
+    }
+
+    .pl.cyan {
+      background: var(--cyan);
+      color: var(--cyan);
+    }
+
+    .pl.cyan span,
+    .pl.green span,
+    .pl.pink span,
+    .pl.yellow span {
+      color: #061018;
+    }
+
+    .pl.green {
+      background: var(--green);
+      color: var(--green);
+      padding-left: 24px;
+    }
+
+    .pl.pink {
+      background: var(--pink);
+      color: var(--pink);
+      padding-left: 24px;
+    }
+
+    .pl.yellow {
+      background: var(--yellow);
+      color: var(--yellow);
+      padding-left: 24px;
+    }
+
+    .pl.tail {
+      flex: 1;
+      background: #111827;
+      color: #111827;
+      padding-left: 26px;
+      min-width: 140px;
+    }
+
+    .pl.tail span {
+      color: var(--muted);
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 50px minmax(440px, 0.92fr) minmax(420px, 1.08fr);
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+        var(--terminal);
+      background-size: 100% 24px;
+    }
+
+    .rail {
+      border-right: 1px solid var(--line);
+      background: #0a0f17;
+      display: grid;
+      grid-template-rows: repeat(4, 44px) 1fr;
+      justify-items: center;
+      padding-top: 10px;
+    }
+
+    .rail-button {
+      width: 32px;
+      height: 34px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font: 900 14px var(--mono);
+    }
+
+    .rail-button.active {
+      color: var(--cyan);
+      border-color: rgba(34, 211, 238, 0.42);
+      background: rgba(34, 211, 238, 0.10);
+      box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.12);
+    }
+
+    .pane {
+      min-width: 0;
+      min-height: 0;
+      border-right: 1px solid var(--line);
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .pane:last-child {
+      border-right: 0;
+    }
+
+    .pane-head {
+      min-height: 50px;
+      border-bottom: 1px solid var(--line);
+      padding: 9px 12px;
+      display: grid;
+      align-items: center;
+      background: rgba(13, 17, 23, 0.92);
+    }
+
+    .preview .pane-head {
+      min-height: 74px;
+      align-items: start;
+      gap: 6px;
+      padding-top: 11px;
+    }
+
+    .query-row {
+      height: 32px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 0 9px;
+      background: #0b1220;
+      box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.06);
+      font: 13px var(--mono);
+    }
+
+    .prompt {
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .query {
+      color: var(--ink);
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .cursor {
+      width: 8px;
+      height: 15px;
+      background: var(--cyan);
+      box-shadow: 0 0 14px rgba(34, 211, 238, 0.9);
+    }
+
+    .sessions {
+      min-height: 0;
+      overflow: hidden;
+      padding: 8px;
+      display: grid;
+      grid-auto-rows: min-content;
+      gap: 6px;
+      font-family: var(--mono);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 18px 64px 38px 1fr 88px;
+      gap: 9px;
+      align-items: center;
+      min-height: 36px;
+      padding: 0 9px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: #c9d1d9;
+    }
+
+    .row.head {
+      color: var(--dim);
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 800;
+      min-height: 26px;
+      border-bottom: 1px solid rgba(37, 48, 65, 0.7);
+      border-radius: 0;
+    }
+
+    .row.active {
+      border-color: rgba(34, 211, 238, 0.55);
+      background: linear-gradient(90deg, rgba(34, 211, 238, 0.18), rgba(96, 165, 250, 0.07));
+      box-shadow:
+        inset 3px 0 0 var(--cyan),
+        0 0 24px rgba(34, 211, 238, 0.08);
+    }
+
+    .row.dimmed {
+      color: #9aa4b2;
+    }
+
+    .marker {
+      color: var(--cyan);
+      font-weight: 900;
+    }
+
+    .time {
+      color: var(--green);
+      font-size: 12px;
+    }
+
+    .turns {
+      color: var(--yellow);
+      text-align: right;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .title {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 13px;
+    }
+
+    .cwd {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      color: var(--violet);
+      font-size: 12px;
+    }
+
+    .preview-pane {
+      min-height: 0;
+      overflow: auto;
+      padding: 12px;
+      font-family: var(--mono);
+    }
+
+    .preview-top {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .session-id {
+      color: var(--dim);
+      font-size: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font: 800 19px/1.35 var(--sans);
+      letter-spacing: 0;
+      color: #f8fafc;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .stat {
+      min-width: 0;
+      border: 1px solid #2f3b51;
+      border-radius: 8px;
+      padding: 8px;
+      background: rgba(17, 24, 39, 0.74);
+    }
+
+    .stat-label {
+      color: var(--dim);
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 900;
+    }
+
+    .stat-value {
+      margin-top: 5px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 800;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .block-title {
+      margin: 16px 0 7px;
+      color: var(--pink);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .command {
+      min-width: 0;
+      border: 1px solid rgba(34, 211, 238, 0.34);
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: #07111d;
+      color: var(--cyan);
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      box-shadow: inset 0 0 20px rgba(34, 211, 238, 0.05);
+    }
+
+    .timeline {
+      display: grid;
+      gap: 8px;
+      padding-bottom: 14px;
+    }
+
+    .event {
+      display: grid;
+      grid-template-columns: 78px 1fr;
+      gap: 10px;
+      border-left: 2px solid #334155;
+      padding: 4px 0 4px 10px;
+      color: #c9d1d9;
+      line-height: 1.45;
+      font-size: 12px;
+    }
+
+    .event.user {
+      border-left-color: var(--green);
+    }
+
+    .event.agent {
+      border-left-color: var(--cyan);
+    }
+
+    .event.tool {
+      border-left-color: var(--orange);
+    }
+
+    .role {
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .event.user .role {
+      color: var(--green);
+    }
+
+    .event.agent .role {
+      color: var(--cyan);
+    }
+
+    .event.tool .role {
+      color: var(--orange);
+    }
+
+    .statusbar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      border-top: 1px solid var(--line);
+      background: #080c13;
+      font: 12px var(--mono);
+      color: var(--muted);
+      overflow: hidden;
+    }
+
+    .mode {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      background: var(--lime);
+      color: #061018;
+      font-weight: 900;
+    }
+
+    .keys {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .keys b {
+      color: var(--ink);
+      font-weight: 900;
+    }
+
+    .index {
+      padding-right: 12px;
+      color: var(--blue);
+      white-space: nowrap;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        padding: 12px;
+      }
+
+      .shell {
+        height: calc(100vh - 24px);
+        min-height: 620px;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .rail {
+        display: none;
+      }
+
+      .pane.preview {
+        display: none;
+      }
+
+      .row {
+        grid-template-columns: 18px 58px 34px 1fr;
+      }
+
+      .cwd {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell" aria-label="Codex session browser TUI mockup">
+    <header class="chrome">
+      <div class="dots" aria-hidden="true">
+        <span class="dot red"></span>
+        <span class="dot yellow"></span>
+        <span class="dot green"></span>
+      </div>
+      <div class="chrome-title">codex-session-browser - alternate screen</div>
+      <div>118x36</div>
+    </header>
+
+    <section class="powerline">
+      <div class="pl cyan"><span>CSB</span></div>
+      <div class="pl green"><span>sample-app</span></div>
+      <div class="pl pink"><span>18 matches</span></div>
+      <div class="pl yellow"><span>latest first</span></div>
+      <div class="pl tail"><span>local session store · indexed 132 demo files in 11ms</span></div>
+    </section>
+
+    <section class="workspace">
+      <nav class="rail" aria-label="Modes">
+        <div class="rail-button active">▤</div>
+        <div class="rail-button">⌕</div>
+        <div class="rail-button">↳</div>
+        <div class="rail-button">?</div>
+      </nav>
+
+      <section class="pane">
+        <div class="pane-head">
+          <div class="query-row">
+            <span class="prompt">❯</span>
+            <span class="query">resume bug</span>
+            <span class="cursor"></span>
+          </div>
+        </div>
+
+        <div class="sessions">
+          <div class="row head">
+            <span></span>
+            <span>updated</span>
+            <span>turns</span>
+            <span>session</span>
+            <span>project</span>
+          </div>
+
+          <div class="row active">
+            <span class="marker">▶</span>
+            <span class="time">now</span>
+            <span class="turns">42</span>
+            <span class="title">Fix flaky checkout flow after payment retry</span>
+            <span class="cwd">sample-app</span>
+          </div>
+
+          <div class="row">
+            <span class="marker"> </span>
+            <span class="time">11m</span>
+            <span class="turns">31</span>
+            <span class="title">Review auth middleware and refresh token handling</span>
+            <span class="cwd">api-server</span>
+          </div>
+
+          <div class="row">
+            <span class="marker"> </span>
+            <span class="time">26m</span>
+            <span class="turns">58</span>
+            <span class="title">Add keyboard navigation to the dashboard table</span>
+            <span class="cwd">admin-ui</span>
+          </div>
+
+          <div class="row dimmed">
+            <span class="marker"> </span>
+            <span class="time">5d</span>
+            <span class="turns">117</span>
+            <span class="title">Trace intermittent websocket reconnect failures</span>
+            <span class="cwd">realtime</span>
+          </div>
+
+          <div class="row dimmed">
+            <span class="marker"> </span>
+            <span class="time">13d</span>
+            <span class="turns">86</span>
+            <span class="title">Prepare release notes for the CLI update</span>
+            <span class="cwd">docs-site</span>
+          </div>
+
+          <div class="row dimmed">
+            <span class="marker"> </span>
+            <span class="time">Apr28</span>
+            <span class="turns">44</span>
+            <span class="title">Prototype a compact session detail view</span>
+            <span class="cwd">lab-notes</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="pane preview">
+        <div class="pane-head">
+          <div class="session-id">00000000-0000-4000-8000-000000000001</div>
+          <h1>Fix flaky checkout flow after payment retry</h1>
+        </div>
+
+        <div class="preview-pane">
+          <div class="preview-top">
+            <div class="meta-grid">
+              <div class="stat">
+                <div class="stat-label">model</div>
+                <div class="stat-value">gpt-5.5</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">tools</div>
+                <div class="stat-value">18</div>
+              </div>
+            </div>
+
+            <div class="block-title">command</div>
+            <div class="command">codex resume 00000000-0000-4000-8000-000000000001</div>
+          </div>
+
+          <div class="block-title">timeline preview</div>
+          <div class="timeline">
+            <div class="event user">
+              <span class="role">user</span>
+              <span>The retry path still shows an expired cart total after payment authorization fails.</span>
+            </div>
+            <div class="event agent">
+              <span class="role">agent</span>
+              <span>Reproduced the issue and narrowed it to stale checkout state after the retry event.</span>
+            </div>
+            <div class="event tool">
+              <span class="role">tool</span>
+              <span>exec npm test -- checkout.retry.spec.ts · exit 0</span>
+            </div>
+            <div class="event user">
+              <span class="role">user</span>
+              <span>Can we keep the fix isolated to checkout state and avoid changing payment adapters?</span>
+            </div>
+            <div class="event agent">
+              <span class="role">agent</span>
+              <span>Patched the checkout reducer and added a focused regression test.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <footer class="statusbar">
+      <div class="mode">NORMAL</div>
+      <div class="keys"><b>▤</b> sessions · <b>/</b> search · <b>↑/↓</b> move · <b>enter</b> resume · <b>f</b> fork · <b>y</b> copy id · <b>q</b> quit</div>
+      <div class="index">row 1 of 18</div>
+    </footer>
+  </main>
+</body>
+</html>
