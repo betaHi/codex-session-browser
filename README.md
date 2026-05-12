@@ -4,6 +4,8 @@ Browse, search, and resume Codex CLI sessions from a terminal UI.
 
 ![preview](./docs/preview.jpeg)
 
+### ▶ Watch demo video
+
 https://github.com/user-attachments/assets/9ae1f97f-9130-4d24-a89f-5882721bf46f
 
 ## Install
