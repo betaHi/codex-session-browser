@@ -2,7 +2,7 @@
 
 Browse, search, and resume Codex CLI sessions from a terminal UI.
 
-![preview](./docs/preview.jpeg)
+<img src="./docs/preview.jpeg" alt="preview" width="720">
 
 ### ▶ Watch demo video
 
