@@ -4,7 +4,9 @@ Browse, search, and resume Codex CLI sessions from a terminal UI.
 
 ![preview](./docs/preview.jpeg)
 
-[Watch demo](./docs/demo.mov)
+<h3 align="center">
+  <a href="./docs/demo.mov">▶&nbsp;&nbsp;Watch demo video</a>
+</h3>
 
 ## Install
 
