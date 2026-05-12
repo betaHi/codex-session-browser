@@ -5,7 +5,7 @@ Browse, search, and resume Codex CLI sessions from a terminal UI.
 <img src="./docs/preview.jpeg" alt="preview" width="720">
 
 <details>
-<summary><strong style="font-size: 1.15em;">Watch demo video</strong></summary>
+<summary><strong style="font-size: 1.35em;">Watch demo video</strong></summary>
 
 https://github.com/user-attachments/assets/9ae1f97f-9130-4d24-a89f-5882721bf46f
 
