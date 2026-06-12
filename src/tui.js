@@ -309,8 +309,12 @@ class SessionBrowser {
   }
 
   pageSize() {
+    // Mirror the visible-session count computed in renderList so scrolling
+    // and movement stay in lock-step. Falls back to a derived estimate
+    // before the first render populates this.visibleSessions.
+    if (this.visibleSessions) return this.visibleSessions;
     const rows = terminalSize().rows;
-    return Math.max(1, Math.floor((rows - 14) / 2));
+    return Math.max(1, Math.floor((rows - 15) / 2));
   }
 
   runCodex(command) {
@@ -346,7 +350,7 @@ class SessionBrowser {
   render() {
     if (this.closed) return;
     const { columns, rows } = terminalSize();
-    const width = Math.min(Math.max(40, columns), 132);
+    const width = Math.min(Math.max(40, columns), 148);
     const height = Math.min(Math.max(20, rows), 40);
     const leftMargin = Math.max(0, Math.floor((columns - width) / 2));
     const topMargin = Math.max(0, Math.floor((rows - height) / 2));
@@ -355,7 +359,7 @@ class SessionBrowser {
     const contentWidth = width - railWidth;
     const showDetail = contentWidth >= 84;
     const listWidth = showDetail
-      ? clamp(Math.floor(contentWidth * 0.54), 50, Math.max(50, contentWidth - 60))
+      ? clamp(Math.floor(contentWidth * 0.58), 56, Math.max(56, contentWidth - 60))
       : contentWidth;
     const detailWidth = showDetail ? contentWidth - listWidth : 0;
     // chrome(2) + powerline(2) + status(1) = 5
@@ -455,7 +459,8 @@ class SessionBrowser {
     lines.push(blankLine(innerWidth));
 
     const rowsPerSession = 2; // session line + 1 blank for spacing
-    const visibleSessions = Math.max(0, Math.floor((height - lines.length - 1) / rowsPerSession));
+    const visibleSessions = Math.max(1, Math.floor((height - lines.length - 1) / rowsPerSession));
+    this.visibleSessions = visibleSessions;
     this.offset = clamp(this.offset, 0, Math.max(0, this.sessions.length - visibleSessions));
     const page = this.sessions.slice(this.offset, this.offset + visibleSessions);
 
@@ -648,9 +653,10 @@ function listColumnWidths(width) {
   // "   " (3) prefix + 4 separators "  " (8) + extra gap before project (4) = 15 overhead
   const overhead = 3 + 8 + 4;
   const project = 14;
-  const fixed = 1 + 7 + 5 + project;
+  const updated = 10; // fits ISO date "2026-05-12"
+  const fixed = 1 + updated + 5 + project;
   const titleWidth = Math.max(6, width - overhead - fixed);
-  return [1, 7, 5, titleWidth, project];
+  return [1, updated, 5, titleWidth, project];
 }
 
 function fillLine(value, width, bg = BLACK_BG) {
